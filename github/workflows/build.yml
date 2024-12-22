@@ -11,13 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # Fetch full commit history for accurate analysis
+          fetch-depth: 0
 
-      # Step 2: Run SonarQube scanner
       - name: Run SonarQube Scanner
         uses: sonarsource/sonarqube-scan-action@master
         with:
@@ -26,13 +24,6 @@ jobs:
             -Dsonar.projectKey=your-project-key
             -Dsonar.sources=.
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+            -X
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-      # Step 3 (Optional): Fail job if Quality Gate is not met
-      # Uncomment to enforce Quality Gate checks
-      # - name: Quality Gate
-      #   uses: sonarsource/sonarqube-quality-gate-action@master
-      #   timeout-minutes: 5
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
