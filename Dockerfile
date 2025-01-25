@@ -1,5 +1,8 @@
 # Use Node.js 16 slim as the base image
-FROM node:16
+FROM node:16-slim
+
+# Install bash
+RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
@@ -8,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --production
 
 # Copy the rest of the application code
 COPY . .
@@ -21,3 +24,4 @@ EXPOSE 3000
 
 # Start your Node.js server (assuming it serves the React app)
 CMD ["npm", "start"]
+
