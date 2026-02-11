@@ -58,6 +58,12 @@ jobs:
       - name: Image scan
         run: trivy image dleoma/swiggy-clone:latest > trivyimagedeploy.txt
 
+      - name: Upload Trivy scan report (file property update)
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-scan-report
+          path: trivyimagedeploy.txt
+
       - name: Stop/remove existing container (if any)
         run: |
           docker rm -f swiggy-clone || true
@@ -65,3 +71,8 @@ jobs:
       # If you used the Nginx Dockerfile (React build served on 80):
       - name: Deploy container
         run: docker run -d --name swiggy-clone -p 3000:80 dleoma/swiggy-clone:latest
+
+      - name: Wait for container to be healthy (basic check)
+        run: |
+          sleep 10
+          docker ps | grep swiggy-clone
