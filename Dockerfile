@@ -1,9 +1,6 @@
 # Use Node.js 16 slim as the base image
 FROM node:16-slim
 
-# Install bash
-RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
-
 # Set the working directory
 WORKDIR /app
 
