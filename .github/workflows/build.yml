@@ -2,31 +2,66 @@ name: Build
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [ main ]
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: SonarSource/sonarqube-scan-action@v7
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      - name: NPM Install
-        run: npm install
-        
-      - name: Docker build and push
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.Dockerhub_username }}
+          password: ${{ secrets.Dockerhub_token }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: dleoma/swiggy-clone:latest
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull image
+        run: docker pull dleoma/swiggy-clone:latest
+
+      - name: Image scan
+        run: trivy image dleoma/swiggy-clone:latest > trivyimagedeploy.txt
+
+      - name: Stop/remove existing container (if any)
         run: |
-          # Run commands to build and push Docker images
-          docker build -t swiggy-clone .
-          docker tag swiggy-clone dleoma/swiggy-clone:latest
-          docker login -u ${{ secrets.Dockerhub_username }} -p ${{ secrets.Dockerhub_token }}
-          docker push dleoma/swiggy-clone:latest
-        env:
-          DOCKER_CLI_ACI: 1
+          docker rm -f swiggy-clone || true
+
+      # If you used the Nginx Dockerfile (React build served on 80):
+      - name: Deploy container
+        run: docker run -d --name swiggy-clone -p 3000:80 dleoma/swiggy-clone:latest
